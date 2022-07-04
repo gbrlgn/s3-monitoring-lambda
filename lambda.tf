@@ -16,6 +16,7 @@ resource "aws_lambda_function" "s3_alarm_lambda" {
     variables = {
       BUCKET_NAME = var.bucket_name
       WEBHOOK_URL = var.webhook_url
+      SNS_ARN     = aws_sns_topic.s3_monitoring.arn
     }
   }
 }

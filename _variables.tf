@@ -38,3 +38,7 @@ variable "bucket_name" {
 variable "webhook_url" {
   description = "URL to the Slack webhook"
 }
+
+variable "sns_email" {
+  description = "Email address for SNS notification"
+}

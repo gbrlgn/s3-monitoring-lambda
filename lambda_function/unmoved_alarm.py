@@ -5,11 +5,12 @@ from botocore.exceptions import ClientError
 from slack_sdk.webhook import WebhookClient
 
 
-def lambda_handler(event, context):
-    global timestamps, now
-    bucket_name = os.environ["BUCKET_NAME"]
-    webhook = os.environ["WEBHOOK_URL"]
+bucket_name = os.environ["BUCKET_NAME"]
+webhook = os.environ["WEBHOOK_URL"]
+sns_arn = os.environ["SNS_ARN"]
 
+
+def lambda_handler(event, context):
     try:
         s3 = boto3.session.Session().resource("s3")
         bucket = s3.Bucket(bucket_name)
@@ -22,7 +23,8 @@ def lambda_handler(event, context):
         )
         for x in timestamps:
             if x.key != "/":
-                x_mins = int((now - x.last_modified).total_seconds() / 60.0)
+                x_mins = int((now - x.last_modified)
+                             .total_seconds() / 60.0)
                 send_alert(webhook, x.key, x.bucket_name, x_mins)
     except ClientError as e:
         if e.response['Error']['Code'] == 'NoSuchBucket':
@@ -54,14 +56,27 @@ def send_alert(wh, obj_k, obj_bn, obj_mins):
     webhook = WebhookClient(wh)
     if webhook is not None:
         try:
-            response = webhook.send(
+            wh_response = webhook.send(
                 text=f'''
                 [LAMBDA] Atenção: O objeto {obj_name} está há {obj_mins} minutos no diretório {obj_dir} do bucket {obj_bn}.
                 '''
             )
-            print(response)
+            print(wh_response)
         except Exception as e:
             print(str(e))
+
+    try:
+        sns = boto3.client("sns")
+        em_response = sns.publish(
+            TopicArn=sns_arn,
+            Message=f'''
+            Atenção: O objeto {obj_name} está há {obj_mins} minutos no diretório {obj_dir} do bucket {obj_bn}.
+            ''',
+            Subject="[LAMBDA]"
+        )
+        print(em_response)
+    except Exception as e:
+        print(str(e))
 
 
 def send_error(wh, err_msg):
@@ -71,7 +86,20 @@ def send_error(wh, err_msg):
     webhook = WebhookClient(wh)
     if webhook is not None:
         try:
-            response = webhook.send(text=err_msg)
-            print(response)
+            wh_response = webhook.send(text=err_msg)
+            print(wh_response)
         except Exception as e:
             print(str(e))
+
+    try:
+        sns = boto3.client("sns")
+        em_response = sns.publish(
+            TopicArn=sns_arn,
+            Message=f'''
+            {err_msg}.
+            ''',
+            Subject="[LAMBDA]"
+        )
+        print(em_response)
+    except Exception as e:
+        print(str(e))

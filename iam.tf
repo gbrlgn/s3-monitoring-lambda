@@ -1,19 +1,28 @@
 resource "aws_iam_role" "iam_for_lambda" {
   name = "iam_for_lambda"
-
   assume_role_policy = <<-EOF
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Action": "sts:AssumeRole",
-      "Principal": {
-        "Service": "lambda.amazonaws.com"
+  {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Action": "sts:AssumeRole",
+        "Principal": {
+          "Service": "lambda.amazonaws.com"
+        },
+        "Effect": "Allow",
+        "Sid": ""
       },
-      "Effect": "Allow",
-      "Sid": ""
-    }
-  ]
-}
-EOF
+      {
+        "Action": [
+          "sns:Publish",
+          "sns:Subscribe"
+        ],
+        "Effect": "Allow",
+        "Resource": [
+            "${aws_sns_topic.s3_monitoring.arn}"
+        ]
+      }
+    ]
+  }
+  EOF
 }
