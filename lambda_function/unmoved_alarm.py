@@ -11,6 +11,16 @@ sns_arn = os.environ["SNS_ARN"]
 
 
 def lambda_handler(event, context):
+    """This function accesses a S3 bucket via Session and creates a generator
+    for all its objects, filtering out the ones with the last_modified key set
+    to more than 5 minutes from the start of the Lambda function's execution.
+    The time each object is resting unmodified is then calculated and set to a
+    variable. If the access and filtering doesn't raise any exceptions, the
+    send_alert function is called passing a webhook, the object and bucket
+    names and the number of minutes the object has rested unmodified. In case
+    of exceptions, the send_error function is called by passing a webhook and
+    either a specific error message string or a string of the error object.
+    """
     try:
         s3 = boto3.session.Session().resource("s3")
         bucket = s3.Bucket(bucket_name)
