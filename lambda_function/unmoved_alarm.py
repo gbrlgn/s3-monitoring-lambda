@@ -1,3 +1,11 @@
+"""This module requires os for environment variable resolution, boto3 for AWS
+integration, datetime and timezone for last_modified attribute calculations,
+botocore's exceptions to use the ClientError exception and Slack's SDK to create
+webhooks. BUCKET_NAME, WEBHOOK_URL and SNS_ARN must be passed as environment
+variables via Terraform's module declaration.
+"""
+
+
 import os
 import boto3
 from datetime import datetime, timezone
@@ -49,6 +57,12 @@ def lambda_handler(event, context):
 
 
 def send_alert(wh, obj_k, obj_bn, obj_mins):
+    """This function sends a notification via webhook or email, by using SNS,
+    and takes a webhook object, a S3 object's key, its bucket name and the
+    number of minutes passed since it was last modified. The function then
+    resolves the object's path and name by splitting slash characters and then
+    formats the notification string to be sent by the webhook and by SNS.
+    """
     headers = {"Content-Type": "application/json"}
     data = {"text": "Lambda webhook"}
 
@@ -61,7 +75,7 @@ def send_alert(wh, obj_k, obj_bn, obj_mins):
         for i in range(len(dir_split) - 1):
             obj_dir = obj_dir + dir_split[i] + "/"
     else:
-        obj_dir = "raiz"
+        obj_dir = "raiz"  # root dir
 
     webhook = WebhookClient(wh)
     if webhook is not None:
@@ -90,6 +104,12 @@ def send_alert(wh, obj_k, obj_bn, obj_mins):
 
 
 def send_error(wh, err_msg):
+    """This function sends an error notification via webhook or email, much
+    like send_alert, and takes a webhook and an error message string. This
+    message can and should be customized, e.g. lambda_handler's except clause,
+    but can also receive an error object converted into string by using the str
+    function or similar.
+    """
     headers = {"Content-Type": "application/json"}
     data = {"text": "Lambda webhook error"}
 
