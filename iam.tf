@@ -1,4 +1,4 @@
-resource "aws_iam_role" "iam_for_lambda" {
+resource "aws_iam_role" "s3_monitoring_role" {
   name = "iam_for_lambda"
   assume_role_policy = <<-EOF
   {
